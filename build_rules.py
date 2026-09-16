@@ -480,6 +480,34 @@ def prepare_mihomo(
 
         txt_file.write_text("".join(new_lines), encoding="utf-8")
 
+        # Mihomo will panic with "empty rule" if a text ruleset contains only
+        # comments / blank lines. Detect that before invoking convert-ruleset.
+        effective_lines = [
+            line.strip()
+            for line in new_lines
+            if line.strip()
+            and not line.lstrip().startswith(("#", ";"))
+        ]
+
+        is_deprecated = any(
+            "Sukka's Ruleset - Deprecated" in line.lower()
+            for line in new_lines
+        )
+
+        if not effective_lines:
+            print(
+                f"WARNING: ruleset contains no effective rules, "
+                f"skipping Mihomo compilation: {txt_file}"
+            )
+            continue
+
+        if is_deprecated:
+            print(
+                f"WARNING: deprecated ruleset, skipping Mihomo compilation: "
+                f"{txt_file}"
+            )
+            continue
+
         rule_type = "ipcidr" if is_ip_folder else "domain"
         mrs_path = txt_file.with_suffix(".mrs")
 

@@ -6,6 +6,9 @@ import argparse
 import gzip
 import json
 import os
+import re
+import unicodedata
+from difflib import SequenceMatcher
 import platform
 import shutil
 import stat
@@ -22,10 +25,84 @@ MIHOMO_VERSION = "1.19.17"
 SUKKA_REPO = "https://github.com/SukkaLab/ruleset.skk.moe.git"
 META_REPO = "https://github.com/MetaCubeX/meta-rules-dat.git"
 
-JUNK_STRINGS = {
-    "7h1s_rul35et_i5_mad3_by_5ukk4w-ruleset.skk.moe",
-    "this_ruleset_is_made_by_sukkaw.ruleset.skk.moe",
-}
+# Sukka 的水印字符串会不定期变形，例如把字母替换成形状相似的数字：
+#   this.ruleset.is.made.by.sukkaw.skk.moe
+#   7h15.ru1353t.1s.m4d3.by.5ukk4w.skk.moe
+#
+# 因此不再维护固定黑名单，而是做“视觉同形归一化 + 模糊匹配”。
+_CONFUSABLE_TRANSLATION = str.maketrans({
+    # i / l / 1 在这种水印里经常互换，统一成同一个占位字符。
+    "i": "1",
+    "l": "1",
+    "1": "1",
+    "|": "1",
+    "!": "1",
+
+    "o": "o",
+    "0": "o",
+
+    "e": "e",
+    "3": "e",
+
+    "a": "a",
+    "4": "a",
+    "@": "a",
+
+    "s": "s",
+    "5": "s",
+    "$": "s",
+
+    "t": "t",
+    "7": "t",
+
+    "b": "b",
+    "8": "b",
+
+    # 偶尔也有人用 6/9 冒充 g。
+    "g": "g",
+    "6": "g",
+    "9": "g",
+})
+
+
+def normalize_visual_text(value: object) -> str:
+    """Normalize common leetspeak/lookalike substitutions and separators."""
+    value = unicodedata.normalize("NFKC", str(value)).lower()
+    value = value.translate(_CONFUSABLE_TRANSLATION)
+    # 忽略点号、横线、下划线、空格等分隔符。
+    return re.sub(r"[^a-z0-9]+", "", value)
+
+
+_JUNK_CANONICAL = tuple(
+    normalize_visual_text(x)
+    for x in (
+        "this ruleset is made by sukkaw skk moe",
+        "this ruleset is made by sukkaw ruleset skk moe",
+    )
+)
+_JUNK_CORE = normalize_visual_text("this ruleset is made by sukkaw")
+
+
+def is_junk_watermark(value: object) -> bool:
+    """
+    Detect Sukka watermark strings even if separators or lookalike characters
+    change in future versions.
+    """
+    normalized = normalize_visual_text(value)
+
+    # 普通短域名不参与 fuzzy match，降低误杀概率。
+    if len(normalized) < 20:
+        return False
+
+    # 最常见情况：主体句子仍然完整，只改了分隔符/leet 字符。
+    if _JUNK_CORE in normalized:
+        return True
+
+    # 再容忍少量新增、删除、替换字符。
+    return any(
+        SequenceMatcher(None, normalized, target).ratio() >= 0.88
+        for target in _JUNK_CANONICAL
+    )
 
 MOSDNS_KEY_MAP = {
     "domain_suffix": "domain:",
@@ -238,7 +315,7 @@ def clean_sing_json(sing_dir: Path) -> None:
 
                     new_val = [
                         x for x in val
-                        if str(x) not in JUNK_STRINGS
+                        if not is_junk_watermark(x)
                     ]
 
                     if (
@@ -382,7 +459,7 @@ def prepare_mihomo(
         for line in lines:
             content = line.strip()
 
-            if any(junk in content for junk in JUNK_STRINGS):
+            if is_junk_watermark(content):
                 continue
 
             if txt_file.name == "reject.txt" and "juejin" in content:

@@ -59,6 +59,7 @@ jobs:
               ! -name mihomo \
               ! -name sing \
               ! -name mosdns \
+              ! -name index.html \
               -printf '%f\n'
           )"
 

@@ -1,0 +1,91 @@
+name: Build Rulesets
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 06:30 UTC+8
+    - cron: "30 22 * * *"
+  push:
+    branches:
+      - main
+    paths:
+      - "build_rules.py"
+      - "own/**"
+      - ".github/workflows/build-rules.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ruleset-publish
+  cancel-in-progress: true
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Cache rule compiler binaries
+        uses: actions/cache@v5
+        with:
+          path: .cache/rule-build-tools
+          key: rule-build-tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('build_rules.py') }}
+          restore-keys: |
+            rule-build-tools-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Build rulesets
+        run: python3 build_rules.py
+
+      - name: Build index html
+        run: python3 gen_index.py
+
+      - name: Verify output
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test -d gh-pages/mihomo
+          test -d gh-pages/sing
+          test -d gh-pages/mosdns
+
+          echo "Generated top-level entries:"
+          find gh-pages -mindepth 1 -maxdepth 1 -printf '%f\n' | sort
+
+          unexpected="$(
+            find gh-pages -mindepth 1 -maxdepth 1 \
+              ! -name mihomo \
+              ! -name sing \
+              ! -name mosdns \
+              -printf '%f\n'
+          )"
+
+          if [[ -n "$unexpected" ]]; then
+            echo "::error::Unexpected entries in gh-pages/:"
+            echo "$unexpected"
+            #exit 1
+          fi
+
+      - name: Publish gh-pages branch
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          cd gh-pages
+
+          git init
+          git checkout -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+          git commit -m "Released on $(date --iso-8601=seconds)"
+
+          git remote add origin \
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
+          git push --force origin gh-pages

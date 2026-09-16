@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "rules": [
+    {
+      "domain_suffix": [
+        "bt.neu6.edu.cn",
+        "hudbt.hust.edu.cn",
+        "bt.byr.cn",
+        "tjupt.org",
+        "testipv6.cn"
+      ]
+    }
+  ]
+}

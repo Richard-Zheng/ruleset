@@ -1,0 +1,6 @@
+full:canary.mask.apple-dns.net
+full:mask-api.icloud.com
+full:mask-canary.icloud.com
+full:mask-h2.icloud.com
+full:mask.apple-dns.net
+full:mask.icloud.com

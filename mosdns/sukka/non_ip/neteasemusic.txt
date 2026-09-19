@@ -1,0 +1,2 @@
+domain:music.126.net
+domain:music.163.com

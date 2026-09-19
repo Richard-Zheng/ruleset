@@ -1,0 +1,9 @@
+domain:account.sogou.com
+domain:beacon.qq.com
+domain:get.sogou.com
+domain:ime.sogou.com
+domain:macime.sogou.com
+domain:pinyin.sogou.com
+domain:sginput.qq.com
+domain:shouji.sogou.com
+full:oth.str.mdt.qq.com

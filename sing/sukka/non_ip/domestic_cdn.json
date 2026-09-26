@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "rules": [
+    {
+      "domain_suffix": [
+        "hdslb.com",
+        "qhimg.com",
+        "qhres.com",
+        "qhimgs.com",
+        "qhres2.com",
+        "music.126.net"
+      ]
+    }
+  ]
+}

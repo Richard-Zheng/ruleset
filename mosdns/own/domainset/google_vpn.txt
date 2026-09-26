@@ -1,0 +1,2 @@
+domain:cloud.cupronickel.goog
+domain:googleapis.com

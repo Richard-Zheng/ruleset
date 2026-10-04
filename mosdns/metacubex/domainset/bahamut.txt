@@ -1,0 +1,7 @@
+domain:bahamut.com.tw
+domain:digicert.com
+domain:gamer.com.tw
+domain:gvt1.com
+domain:hinet.net
+domain:viblast.com
+full:bahamut.akamaized.net

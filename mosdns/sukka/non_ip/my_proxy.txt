@@ -1,0 +1,16 @@
+domain:db-ip.com
+domain:ip-api.com
+domain:ip.sb
+domain:ipdata.co
+domain:ipgeolocation.io
+domain:ipregistry.co
+domain:ipstack.com
+domain:ipwho.is
+domain:nextdns.io
+domain:services.googleapis.cn
+full:fonts.googleapis.cn
+full:fonts.gstatic.cn
+full:ip.cn
+full:sglong.wechat.com
+full:sgminorshort.wechat.com
+full:sgshort.wechat.com

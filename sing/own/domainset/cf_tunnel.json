@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "rules": [
+    {
+      "domain": [
+        "api.cloudflare.com",
+        "pqtunnels.cloudflareresearch.com"
+      ],
+      "domain_suffix": [
+        "argotunnel.com",
+        "cftunnel.com",
+        "cloudflareaccess.com"
+      ]
+    }
+  ]
+}

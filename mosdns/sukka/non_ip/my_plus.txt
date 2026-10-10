@@ -1,0 +1,15 @@
+domain:18comic.org
+domain:18comic.vip
+domain:akamai-content-networks.com
+domain:akamaihd.net
+domain:akamaized.net
+domain:azurefd.net
+domain:hentaiverse.org
+domain:kxcdn.com
+domain:sososo.io
+domain:vo.msecnd.net
+full:a1ewuiz2p7wdvw-ats.iot.us-west-2.amazonaws.com
+full:api.wakatime.com
+full:hanime1.me
+full:hv-monster-submit.skk.moe
+full:simpcraft.com

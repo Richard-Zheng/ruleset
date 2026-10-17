@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "rules": [
+    {
+      "domain": [
+        "apm-misaka.biliapi.net",
+        "upos-bstar-mirrorakam.akamaized.net",
+        "upos-bstar1-mirrorakam.akamaized.net"
+      ],
+      "domain_suffix": [
+        "bilibili.tv",
+        "biliintl.com"
+      ]
+    }
+  ]
+}

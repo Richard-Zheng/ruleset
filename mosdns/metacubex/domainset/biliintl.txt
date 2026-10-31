@@ -1,0 +1,11 @@
+domain:api.global.bilibili.com
+domain:apm-misaka.biliapi.net
+domain:app.global.bilibili.com
+domain:bilibili.tv
+domain:biliintl.com
+domain:bstarstatic.com
+domain:p-bstarstatic.akamaized.net
+domain:upos-bstar-mirrorakam.akamaized.net
+domain:upos-bstar1-mirrorakam.akamaized.net
+domain:upos-sz-mirroralibstar1.bilivideo.com
+domain:upos-sz-mirrorcosbstar1.bilivideo.com

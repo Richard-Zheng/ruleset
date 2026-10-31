@@ -1,0 +1,3 @@
+domain:cm.steampowered.com
+domain:steamserver.net
+full:steamcdn-a.akamaihd.net

@@ -8,7 +8,13 @@ def generate_indices(base_dir):
     for root, dirs, files in os.walk(base_dir):
         # 取得目前資料夾相對於 TARGET_DIR 的相對路徑（用於標題顯示）
         rel_path = os.path.relpath(root, base_dir)
-        display_title = "Index of /" if rel_path == "." else f"Index of /{rel_path}"
+
+        # 根目錄不生成索引：避免 / 直接列出 sing、mihomo、mosdns 等頂層路徑。
+        # 未生成 index.html 時，OSS / GitHub Pages 對 / 返回 404/403 符合預期。
+        if rel_path == ".":
+            continue
+
+        display_title = f"Index of /{rel_path}"
         
         index_path = os.path.join(root, 'index.html')
         

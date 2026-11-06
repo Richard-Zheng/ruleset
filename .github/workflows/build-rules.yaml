@@ -11,7 +11,7 @@ on:
     paths:
       - "build_rules.py"
       - "own/**"
-      - ".github/workflows/build-rules.yml"
+      - ".github/workflows/build-rules.yaml"
 
 permissions:
   contents: write
@@ -50,6 +50,9 @@ jobs:
           test -d gh-pages/mihomo
           test -d gh-pages/sing
           test -d gh-pages/mosdns
+
+          # 根目录不生成索引：访问 / 应返回 404/403，避免暴露顶层路径。
+          test ! -e gh-pages/index.html
 
           echo "Generated top-level entries:"
           find gh-pages -mindepth 1 -maxdepth 1 -printf '%f\n' | sort

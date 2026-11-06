@@ -18,7 +18,7 @@ WORK=${WORK:-/tmp/sb-bins}
 OUT=${OUT:-$WORK/out}
 OSS_PREFIX=${OSS_PREFIX:-oss://rulesets}
 ONLY=${ONLY:-all}
-LITE=${LITE:-0}                 # 1 = sing-box 用精简 tags（路由器用），产物体积约减半
+LITE_ARCHS=${LITE_ARCHS:-arm64}  # 用精简 tags 的架构（路由器）；其余架构用完整 tags
 UPX_ARM64=${UPX_ARM64:-1}       # 1 = arm64 产物 upx --lzma --best
 CHECK_CONFIG=${CHECK_CONFIG:-}   # sing-box check -c <config>，验证精简版够用
 QEMU=${QEMU:-qemu-aarch64}      # 用来跑 arm64 产物做自检
@@ -101,24 +101,25 @@ build_singbox() {
     fetch_src https://github.com/SagerNet/sing-box.git "$tag" "$src"
 
     # 官方 linux 非 naive 版本用的 tag 与 ldflags
-    tags=$(cat "$src/release/DEFAULT_BUILD_TAGS_OTHERS")
-    local suffix=""
-    if [[ $LITE == 1 ]]; then
-        tags=$LITE_TAGS
-        suffix="-lite"
-        echo "    (lite tags: $tags)"
-    fi
+    local full_tags
+    full_tags=$(cat "$src/release/DEFAULT_BUILD_TAGS_OTHERS")
     ldflags="-X github.com/sagernet/sing-box/constant.Version=${tag#v} $(cat "$src/release/LDFLAGS") -s -w -buildid="
 
-    local arch
+    local arch tags
     for arch in amd64 arm64; do
-        echo "--- sing-box linux/$arch"
+        if [[ " $LITE_ARCHS " == *" $arch "* ]]; then
+            tags=$LITE_TAGS
+            echo "--- sing-box linux/$arch (lite tags)"
+        else
+            tags=$full_tags
+            echo "--- sing-box linux/$arch"
+        fi
         (
             cd "$src"
             go_build "$arch" go build -trimpath -tags "$tags" \
-                -ldflags "$ldflags" -o "$OUT/sing-box-linux-$arch$suffix" ./cmd/sing-box
+                -ldflags "$ldflags" -o "$OUT/sing-box-linux-$arch" ./cmd/sing-box
         )
-        show_buildinfo "$OUT/sing-box-linux-$arch$suffix"
+        show_buildinfo "$OUT/sing-box-linux-$arch"
     done
 }
 
@@ -132,9 +133,15 @@ case "$ONLY" in
 esac
 
 if [[ $UPX_ARM64 == 1 ]]; then
-    for f in "$OUT"/*arm64*; do
+    for f in "$OUT"/mihomo-linux-arm64 "$OUT"/sing-box-linux-*; do
         [[ -e $f ]] || continue
-        case $f in *sing-box*) [[ $LITE == 1 ]] || continue ;; esac
+        case $f in
+            *sing-box*)
+                # 只有精简架构才压（路由器），完整版保留原样
+                arch=${f##*-}
+                [[ " $LITE_ARCHS " == *" $arch "* ]] || continue
+                ;;
+        esac
         echo "--- upx --lzma --best $(basename "$f")"
         upx -q --lzma --best "$f" >/dev/null
     done

@@ -18,7 +18,9 @@ WORK=${WORK:-/tmp/sb-bins}
 OUT=${OUT:-$WORK/out}
 OSS_PREFIX=${OSS_PREFIX:-oss://rulesets}
 ONLY=${ONLY:-all}
+LITE=${LITE:-0}                 # 1 = sing-box 用精简 tags（路由器用），产物体积约减半
 UPX_ARM64=${UPX_ARM64:-1}       # 1 = arm64 产物 upx --lzma --best
+CHECK_CONFIG=${CHECK_CONFIG:-}   # sing-box check -c <config>，验证精简版够用
 QEMU=${QEMU:-qemu-aarch64}      # 用来跑 arm64 产物做自检
 
 UPLOAD=1
@@ -30,6 +32,10 @@ for arg in "$@"; do
 done
 
 BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+# 精简版：去掉 quic/acme/tailscale/ccm/ocm/openvpn/openconnect/cloudflared/usbip/gvisor，
+# 保留 utls（reality 必需）、clash_api、dhcp、wireguard。
+LITE_TAGS="with_dhcp,with_wireguard,with_utls,with_clash_api,badlinkname,tfogo_checklinkname0"
 
 latest_tag() {
     # 只看稳定 tag（不含 -alpha/-beta/-rc）
@@ -85,11 +91,6 @@ build_mihomo() {
         show_buildinfo "$OUT/mihomo-linux-$arch"
     done
 
-    # arm64 体积减半（amd64 保留原样）
-    if [[ $UPX_ARM64 == 1 ]]; then
-        echo "--- upx --lzma --best mihomo-linux-arm64"
-        upx -q --lzma --best "$OUT/mihomo-linux-arm64" >/dev/null
-    fi
 }
 
 build_singbox() {
@@ -101,6 +102,12 @@ build_singbox() {
 
     # 官方 linux 非 naive 版本用的 tag 与 ldflags
     tags=$(cat "$src/release/DEFAULT_BUILD_TAGS_OTHERS")
+    local suffix=""
+    if [[ $LITE == 1 ]]; then
+        tags=$LITE_TAGS
+        suffix="-lite"
+        echo "    (lite tags: $tags)"
+    fi
     ldflags="-X github.com/sagernet/sing-box/constant.Version=${tag#v} $(cat "$src/release/LDFLAGS") -s -w -buildid="
 
     local arch
@@ -109,9 +116,9 @@ build_singbox() {
         (
             cd "$src"
             go_build "$arch" go build -trimpath -tags "$tags" \
-                -ldflags "$ldflags" -o "$OUT/sing-box-linux-$arch" ./cmd/sing-box
+                -ldflags "$ldflags" -o "$OUT/sing-box-linux-$arch$suffix" ./cmd/sing-box
         )
-        show_buildinfo "$OUT/sing-box-linux-$arch"
+        show_buildinfo "$OUT/sing-box-linux-$arch$suffix"
     done
 }
 
@@ -124,6 +131,15 @@ case "$ONLY" in
     *) echo "ONLY must be mihomo|singbox|all" >&2; exit 2 ;;
 esac
 
+if [[ $UPX_ARM64 == 1 ]]; then
+    for f in "$OUT"/*arm64*; do
+        [[ -e $f ]] || continue
+        case $f in *sing-box*) [[ $LITE == 1 ]] || continue ;; esac
+        echo "--- upx --lzma --best $(basename "$f")"
+        upx -q --lzma --best "$f" >/dev/null
+    done
+fi
+
 echo
 echo ">>> 产物"
 for f in "$OUT"/*; do
@@ -133,16 +149,31 @@ done
 
 echo
 echo ">>> 自检"
-[[ -x $OUT/mihomo-linux-amd64 ]] && "$OUT/mihomo-linux-amd64" -v
-[[ -x $OUT/sing-box-linux-amd64 ]] && "$OUT/sing-box-linux-amd64" version | head -2
+for f in "$OUT"/mihomo-*amd64*; do
+    [[ -x $f ]] && "$f" -v
+done
+for f in "$OUT"/sing-box-*amd64*; do
+    [[ -x $f ]] && "$f" version | head -2
+done
 if command -v "$QEMU" >/dev/null; then
-    echo "--- arm64 via $QEMU"
-    [[ -x $OUT/mihomo-linux-arm64 ]] && "$QEMU" "$OUT/mihomo-linux-arm64" -v
-    [[ -x $OUT/sing-box-linux-arm64 ]] && "$QEMU" "$OUT/sing-box-linux-arm64" version | head -2
+    for f in "$OUT"/mihomo-*arm64*; do
+        [[ -x $f ]] && "$QEMU" "$f" -v
+    done
+    for f in "$OUT"/sing-box-*arm64*; do
+        [[ -x $f ]] && "$QEMU" "$f" version | head -2
+    done
 else
     echo "(没有 $QEMU，跳过 arm64 运行自检)"
 fi
 file "$OUT"/*
+if [[ -n $CHECK_CONFIG ]]; then
+    check_bin=""
+    for f in "$OUT"/sing-box-linux-amd64*; do [[ -x $f ]] && check_bin=$f; done
+    if [[ -n $check_bin ]]; then
+        echo "--- check -c $CHECK_CONFIG（$(basename "$check_bin")）"
+        "$check_bin" check -c "$CHECK_CONFIG" && echo "check OK"
+    fi
+fi
 
 if [[ $UPLOAD == 1 ]]; then
     echo

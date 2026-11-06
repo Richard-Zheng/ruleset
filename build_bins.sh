@@ -16,9 +16,10 @@ set -euo pipefail
 
 WORK=${WORK:-/tmp/sb-bins}
 OUT=${OUT:-$WORK/out}
-OSS_PREFIX=${OSS_PREFIX:-oss://rulesets}
+OSS_PREFIX=${OSS_PREFIX:-oss://rulesets/sbbin}
 ONLY=${ONLY:-all}
 LITE_ARCHS=${LITE_ARCHS:-arm64}  # 用精简 tags 的架构（路由器）；其余架构用完整 tags
+EXTRA_LITE_ARCHS=${EXTRA_LITE_ARCHS:-}  # 除 LITE_ARCHS 外，再额外产出一份 -lite 副本
 UPX_ARM64=${UPX_ARM64:-1}       # 1 = arm64 产物 upx --lzma --best
 CHECK_CONFIG=${CHECK_CONFIG:-}   # sing-box check -c <config>，验证精简版够用
 QEMU=${QEMU:-qemu-aarch64}      # 用来跑 arm64 产物做自检
@@ -32,6 +33,8 @@ for arg in "$@"; do
 done
 
 BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+MIHOMO_VERSION=""
+SINGBOX_VERSION=""
 
 # 精简版：去掉 quic/acme/tailscale/ccm/ocm/openvpn/openconnect/cloudflared/usbip/gvisor，
 # 保留 utls（reality 必需）、clash_api、dhcp、wireguard。
@@ -69,6 +72,7 @@ show_buildinfo() {
 build_mihomo() {
     local tag src
     tag=$(latest_tag https://github.com/MetaCubeX/mihomo.git)
+    MIHOMO_VERSION=$tag
     src=$WORK/mihomo
     echo ">>> mihomo $tag"
     fetch_src https://github.com/MetaCubeX/mihomo.git "$tag" "$src"
@@ -96,6 +100,7 @@ build_mihomo() {
 build_singbox() {
     local tag src tags ldflags
     tag=$(latest_tag https://github.com/SagerNet/sing-box.git)
+    SINGBOX_VERSION=$tag
     src=$WORK/sing-box
     echo ">>> sing-box $tag"
     fetch_src https://github.com/SagerNet/sing-box.git "$tag" "$src"
@@ -120,6 +125,16 @@ build_singbox() {
                 -ldflags "$ldflags" -o "$OUT/sing-box-linux-$arch" ./cmd/sing-box
         )
         show_buildinfo "$OUT/sing-box-linux-$arch"
+
+        if [[ " $EXTRA_LITE_ARCHS " == *" $arch "* ]]; then
+            echo "--- sing-box linux/$arch (lite tags, 额外副本)"
+            (
+                cd "$src"
+                go_build "$arch" go build -trimpath -tags "$LITE_TAGS" \
+                    -ldflags "$ldflags" -o "$OUT/sing-box-linux-$arch-lite" ./cmd/sing-box
+            )
+            show_buildinfo "$OUT/sing-box-linux-$arch-lite"
+        fi
     done
 }
 
@@ -133,13 +148,12 @@ case "$ONLY" in
 esac
 
 if [[ $UPX_ARM64 == 1 ]]; then
-    for f in "$OUT"/mihomo-linux-arm64 "$OUT"/sing-box-linux-*; do
+    # 只压 arm64：mihomo 一律压；sing-box 只在 arm64 使用精简 tags 时压。
+    for f in "$OUT"/*arm64*; do
         [[ -e $f ]] || continue
         case $f in
             *sing-box*)
-                # 只有精简架构才压（路由器），完整版保留原样
-                arch=${f##*-}
-                [[ " $LITE_ARCHS " == *" $arch "* ]] || continue
+                [[ " $LITE_ARCHS " == *" arm64 "* ]] || continue
                 ;;
         esac
         echo "--- upx --lzma --best $(basename "$f")"
@@ -181,6 +195,14 @@ if [[ -n $CHECK_CONFIG ]]; then
         "$check_bin" check -c "$CHECK_CONFIG" && echo "check OK"
     fi
 fi
+
+# 生成 sbbin/index.html（由 make_index.py 统一维护）
+write_index() {
+    python3 "$(dirname "$0")/make_index.py" "$OUT" \
+        "${MIHOMO_VERSION:-unknown}" "${SINGBOX_VERSION:-unknown}" $LITE_ARCHS \
+        > "$OUT/index.html"
+}
+write_index
 
 if [[ $UPLOAD == 1 ]]; then
     echo

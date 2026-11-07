@@ -1,0 +1,14 @@
+domain:cdn-telegram.org
+domain:graph.org
+domain:legra.ph
+domain:t.me
+domain:tdesktop.com
+domain:telega.one
+domain:telegra.ph
+domain:telegram.dog
+domain:telegram.me
+domain:telegram.org
+domain:telegram.space
+domain:telesco.pe
+domain:tg.dev
+domain:tx.me

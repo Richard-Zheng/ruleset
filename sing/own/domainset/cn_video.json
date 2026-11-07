@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "rules": [
+    {
+      "domain_keyword": [
+        "bilibili",
+        "haokan.baidu",
+        "mbd.baidu",
+        "youku",
+        "pptv"
+      ],
+      "domain_suffix": [
+        "douyu.com",
+        "douyu.tv",
+        "v.qq.com",
+        "iqiyi.com",
+        "mgtv.com",
+        "ixigua.com",
+        "tv.sohu.com",
+        "acfun.cn",
+        "miguvideo.com"
+      ]
+    }
+  ]
+}
+

@@ -1,0 +1,8 @@
+domain:bbc.co.uk
+domain:bbci.co.uk
+domain:itv.com
+domain:tvlicensing.co.uk
+full:bbc.mp-pxcdn.com
+full:itvpnpmobile-a.akamaihd.net
+keyword:bbcfmt
+keyword:uk-live

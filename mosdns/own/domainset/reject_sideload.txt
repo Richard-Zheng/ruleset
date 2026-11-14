@@ -1,0 +1,7 @@
+domain:appattest.apple.com
+domain:certs.apple.com
+domain:crl.apple.com
+domain:ocsp.apple.com
+domain:ocsp2.apple.com
+domain:valid.apple.com
+domain:vpp.itunes.apple.com

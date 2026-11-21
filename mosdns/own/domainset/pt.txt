@@ -1,0 +1,5 @@
+domain:bt.byr.cn
+domain:bt.neu6.edu.cn
+domain:hudbt.hust.edu.cn
+domain:testipv6.cn
+domain:tjupt.org

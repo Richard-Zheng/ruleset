@@ -1,0 +1,5 @@
+domain:argotunnel.com
+domain:cftunnel.com
+domain:cloudflareaccess.com
+full:api.cloudflare.com
+full:pqtunnels.cloudflareresearch.com

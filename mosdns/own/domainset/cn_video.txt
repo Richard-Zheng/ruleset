@@ -1,0 +1,14 @@
+domain:acfun.cn
+domain:douyu.com
+domain:douyu.tv
+domain:iqiyi.com
+domain:ixigua.com
+domain:mgtv.com
+domain:miguvideo.com
+domain:tv.sohu.com
+domain:v.qq.com
+keyword:bilibili
+keyword:haokan.baidu
+keyword:mbd.baidu
+keyword:pptv
+keyword:youku
